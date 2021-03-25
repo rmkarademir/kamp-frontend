@@ -1,7 +1,9 @@
 import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
+import { ToastrService } from 'ngx-toastr';
 import { Product } from 'src/app/models/product';
+import { CartService } from 'src/app/services/cart.service';
 import { ProductService } from 'src/app/services/product.service';
-
 
 @Component({
   selector: 'app-product',
@@ -11,18 +13,42 @@ import { ProductService } from 'src/app/services/product.service';
 export class ProductComponent implements OnInit {
   products: Product[] = [];
   dataLoaded = false;
-  
+  filterText = '';
 
-  constructor(private productService:ProductService) {} //private yazılırsa dışarıdan bu metoda ulaşılamaz sadece bu componentte kullanılabilir
+  constructor(
+    private productService: ProductService,
+    private activatedRoute: ActivatedRoute,
+    private toastrService: ToastrService,
+    private cartService: CartService
+  ) {} //private yazılırsa dışarıdan bu metoda ulaşılamaz sadece bu componentte kullanılabilir
 
-  ngOnInit(): void {// ilk çalışacak kısımdır
-    this.getProducts();
+  ngOnInit(): void {
+    // ilk çalışacak kısımdır
+    this.activatedRoute.params.subscribe((params) => {
+      if (params['categoryId']) {
+        this.getProductsByCategory(params['categoryId']);
+      } else {
+        this.getProducts();
+      }
+    });
   }
 
   getProducts() {
-    this.productService.getProducts().subscribe((response) => { //map edilmiş datayı response bağla yada abone ol
-      this.products = response.data //products a response daki datayı bağla
+    this.productService.getProducts().subscribe((response) => {//map edilmiş datayı response bağla yada abone ol
+      this.products = response.data; //products a response daki datayı bağla
       this.dataLoaded = true;
-    })
+    });
+  }
+  getProductsByCategory(categoryId: number) {
+    this.productService
+      .getProductsByCategory(categoryId)
+      .subscribe((response) => {
+        this.products = response.data;
+        this.dataLoaded = true;
+      });
+  }
+  addToCart(product: Product) {
+    this.toastrService.success('Sepete eklendi', product.productName, {timeOut: 1000})
+    this.cartService.addToCart(product);
   }
 }
